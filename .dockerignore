@@ -1,0 +1,15 @@
+.git
+.venv
+.opencode
+.openspec
+data
+openspec
+tests
+__pycache__
+*.py[cod]
+.pytest_cache
+.DS_Store
+*.md
+!README.md
+opencode.json
+.mcp.json

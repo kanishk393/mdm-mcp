@@ -3,7 +3,7 @@
   "mcp": {
     "master-data": {
       "type": "local",
-      "command": ["/Users/kanishkkukreja/Assignment_ProdeAI/.venv/bin/mdm-mcp"],
+      "command": ["docker", "run", "-i", "--rm", "-v", "mdm-data:/data", "mdm-mcp:latest"],
       "enabled": true
     }
   }

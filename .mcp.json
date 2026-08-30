@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "master-data": {
-      "command": "/Users/kanishkkukreja/Assignment_ProdeAI/.venv/bin/mdm-mcp",
-      "args": []
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "mdm-data:/data", "mdm-mcp:latest"]
     }
   }
 }

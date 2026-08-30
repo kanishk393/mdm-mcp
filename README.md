@@ -7,7 +7,26 @@ well-documented tools. No GUI, no spreadsheet skills required — the agent is t
 
 Mental model: `Workspace → Datasets → Columns (typed) → Rows`.
 
-## Quickstart
+## Quickstart (Docker — recommended)
+
+One command. Requires only Docker:
+
+```bash
+bash setup.sh
+```
+
+This builds the `mdm-mcp:latest` image, smoke-tests the MCP handshake over stdio, and
+generates `opencode.json` + `.mcp.json` already pointed at the container. Then:
+
+- **OpenCode**: start `opencode` in this folder — done.
+- **Claude Code**: run `claude` in this folder and approve the `master-data` project
+  server when prompted (or `claude mcp add master-data -- docker run -i --rm -v mdm-data:/data mdm-mcp:latest`).
+
+Data lives in the Docker volume `mdm-data` (survives restarts; reset with
+`docker volume rm mdm-data`). No Python, no venv, no ports needed — clients spawn the
+container per session over stdio.
+
+## Quickstart (local, no Docker)
 
 ```bash
 uv venv --python 3.12 .venv
