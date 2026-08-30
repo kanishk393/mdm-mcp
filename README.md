@@ -287,6 +287,7 @@ ls ./data                                                # local setup
 
 ```bash
 bash setup.sh                     # rebuild/re-verify/re-generate client configs (safe, cached)
+bash scripts/resume_check.sh      # prove persistence: write in one session, read in a new one
 docker volume rm mdm-data         # wipe all data and start fresh
 docker rmi mdm-mcp:latest         # remove the image (setup.sh rebuilds it)
 ```
