@@ -12,12 +12,12 @@
 
 ## 2. Phase 2 — Schema lifecycle & row updates (`feat: schema lifecycle & row updates`)
 
-- [ ] 2.1 Implement add_column with default backfill for existing rows; verify rows receive default/null
-- [ ] 2.2 Implement update_column (type/constraints/rename) with per-row revalidation report preserving offending values; verify offending rows are reported, not dropped
-- [ ] 2.3 Implement remove_column and delete_dataset with stateless preview/confirm pattern; verify nothing changes without confirm
-- [ ] 2.4 Implement update_rows (partial, by ids, per-row validation) and validate_rows (no save); verify invalid update leaves rows untouched
-- [ ] 2.5 Implement delete_rows (by ids) with preview/confirm; verify deleted rows become unreachable
-- [ ] 2.6 Run full pytest suite green and commit `feat: schema lifecycle & row updates`
+- [x] 2.1 Implement add_column with default backfill for existing rows; verify rows receive default/null
+- [x] 2.2 Implement update_column (type/constraints/rename) with per-row revalidation report preserving offending values; verify offending rows are reported, not dropped
+- [x] 2.3 Implement remove_column and delete_dataset with stateless preview/confirm pattern; verify nothing changes without confirm
+- [x] 2.4 Implement update_rows (partial, by ids, per-row validation) and validate_rows (no save); verify invalid update leaves rows untouched
+- [x] 2.5 Implement delete_rows (by ids) with preview/confirm; verify deleted rows become unreachable
+- [x] 2.6 Run full pytest suite green and commit `feat: schema lifecycle & row updates`
 
 ## 3. Phase 3 — Search, fuzzy & bulk (`feat: search, fuzzy matching & bulk operations`)
 

@@ -1,11 +1,12 @@
-"""Dataset lifecycle: create, list, describe."""
+"""Dataset lifecycle: create, list, describe, add/update/remove column, delete."""
 
 from __future__ import annotations
 
 from pydantic import ValidationError
 
-from mdm_mcp.models.schema import ColumnSpec, ColumnType, DatasetSchema
+from mdm_mcp.models.schema import ColumnSpec, ColumnType, ColumnUpdate, DatasetSchema
 from mdm_mcp.storage.repository import JsonRepository
+from mdm_mcp.validation.engine import RowValidator
 
 DEFAULT_PAGE_LIMIT = 20
 MAX_PAGE_LIMIT = 100
@@ -68,6 +69,111 @@ class DatasetService:
             "samples": samples,
         }
 
+    def add_column(self, dataset: str, column: dict) -> dict:
+        schema = self.repo.load_schema(dataset)
+        try:
+            spec = ColumnSpec.model_validate(column)
+        except ValidationError as exc:
+            raise ValueError(f"Invalid column definition: {self._validation_message(exc)}")
+        if schema.column(spec.name) is not None:
+            raise ValueError(f"Column '{spec.name}' already exists in '{schema.name}'. Use update_column to change it.")
+        store = self.repo.load_rows(dataset)
+        for row in store["rows"].values():
+            row[spec.name] = spec.default
+        self.repo.save_schema(schema.model_copy(update={"columns": [*schema.columns, spec]}))
+        self.repo.save_rows(dataset, store)
+        return {
+            "dataset": schema.name,
+            "column": spec.name,
+            "type": spec.type.value,
+            "backfilled_rows": len(store["rows"]),
+        }
+
+    def update_column(self, dataset: str, column_name: str, changes: ColumnUpdate | dict) -> dict:
+        schema = self.repo.load_schema(dataset)
+        if isinstance(changes, dict):
+            try:
+                changes = ColumnUpdate.model_validate(changes)
+            except ValidationError as exc:
+                raise ValueError(f"Invalid column update: {self._validation_message(exc)}")
+        existing = schema.column(column_name)
+        if existing is None:
+            raise ValueError(f"Column '{column_name}' does not exist in '{schema.name}'. Available columns: {', '.join(schema.column_names())}.")
+        data = existing.model_dump()
+        for key in changes.model_fields_set:
+            data[key] = getattr(changes, key)
+        new_name = str(data.get("name") or "").strip()
+        if new_name and new_name.lower() != existing.name.lower() and schema.column(new_name) is not None:
+            raise ValueError(f"Column '{new_name}' already exists in '{schema.name}'.")
+        try:
+            updated = ColumnSpec.model_validate(data)
+        except ValidationError as exc:
+            raise ValueError(f"Invalid column update: {self._validation_message(exc)}")
+        new_columns = [updated if c is existing else c for c in schema.columns]
+        new_schema = schema.model_copy(update={"columns": new_columns})
+        store = self.repo.load_rows(dataset)
+        renamed = updated.name != existing.name
+        if renamed:
+            for row in store["rows"].values():
+                if existing.name in row:
+                    row[updated.name] = row.pop(existing.name)
+            self.repo.save_rows(dataset, store)
+        validator = RowValidator(new_schema)
+        invalid: dict[str, list[str]] = {}
+        for rid, row in store["rows"].items():
+            errors = validator.validate_row(row)
+            if errors:
+                invalid[rid] = errors
+        self.repo.save_schema(new_schema)
+        return {
+            "dataset": schema.name,
+            "column": updated.name,
+            "renamed_from": existing.name if renamed else None,
+            "rows_checked": len(store["rows"]),
+            "invalid_rows": invalid,
+        }
+
+    def remove_column(self, dataset: str, column_name: str, confirm: bool) -> dict:
+        schema = self.repo.load_schema(dataset)
+        existing = schema.column(column_name)
+        if existing is None:
+            raise ValueError(f"Column '{column_name}' does not exist in '{schema.name}'. Available columns: {', '.join(schema.column_names())}.")
+        store = self.repo.load_rows(dataset)
+        if not confirm:
+            return {
+                "requires_confirmation": True,
+                "preview": {
+                    "dataset": schema.name,
+                    "column": existing.name,
+                    "affected_rows": len(store["rows"]),
+                    "message": f"This permanently drops column '{existing.name}' and its values from {len(store['rows'])} row(s). Re-invoke with confirm=true to proceed.",
+                },
+            }
+        if len(schema.columns) == 1:
+            raise ValueError("Cannot remove the last column of a dataset. Delete the dataset instead.")
+        remaining = [c for c in schema.columns if c is not existing]
+        self.repo.save_schema(schema.model_copy(update={"columns": remaining}))
+        for row in store["rows"].values():
+            row.pop(existing.name, None)
+        self.repo.save_rows(dataset, store)
+        return {"dataset": schema.name, "removed": existing.name, "rows_updated": len(store["rows"])}
+
+    def delete_dataset(self, name: str, confirm: bool) -> dict:
+        schema = self.repo.load_schema(name)
+        row_count = self.repo.row_count(name)
+        if not confirm:
+            return {
+                "requires_confirmation": True,
+                "preview": {
+                    "dataset": schema.name,
+                    "row_count": row_count,
+                    "column_count": len(schema.columns),
+                    "message": f"This permanently deletes dataset '{schema.name}' and its {row_count} row(s). Re-invoke with confirm=true to proceed.",
+                },
+            }
+        self.repo.delete_dataset(schema.name)
+        return {"deleted": schema.name, "rows_removed": row_count}
+
     def _build_columns(self, columns: list[dict]) -> list[ColumnSpec]:
         specs: list[ColumnSpec] = []
         problems: list[str] = []
@@ -75,7 +181,7 @@ class DatasetService:
             try:
                 specs.append(ColumnSpec.model_validate(raw))
             except ValidationError as exc:
-                problems.append(f"columns[{index}]: {exc.errors(include_url=False)[0]['msg']}")
+                problems.append(f"columns[{index}]: {self._validation_message(exc)}")
         if problems:
             raise ValueError("Invalid column definition(s):\n" + "\n".join(problems))
         if not specs:
@@ -103,8 +209,15 @@ class DatasetService:
             detail["min_value"] = col.min_value
         if col.max_value is not None:
             detail["max_value"] = col.max_value
-        if col.pattern is not None and col.type not in {ColumnType.PHONE}:
+        if col.pattern is not None and col.type is not ColumnType.PHONE:
             detail["pattern"] = col.pattern
         if col.options is not None:
             detail["options"] = col.options
         return detail
+
+    @staticmethod
+    def _validation_message(exc: ValidationError) -> str:
+        first = exc.errors(include_url=False)[0]
+        loc = ".".join(str(part) for part in first.get("loc", ()))
+        prefix = f"{loc}: " if loc else ""
+        return f"{prefix}{first['msg']}"

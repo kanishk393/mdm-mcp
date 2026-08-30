@@ -63,6 +63,21 @@ class ColumnSpec(BaseModel):
         return self
 
 
+class ColumnUpdate(BaseModel):
+    """Partial column definition change; only explicitly provided fields apply."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, description="New name for the column (rename).")
+    type: ColumnType | None = Field(default=None, description="New column type.")
+    required: bool | None = Field(default=None, description="Whether every row must provide a non-empty value.")
+    default: Any = Field(default=None, description="Value used when a row omits this column (null clears it).")
+    min_value: float | None = Field(default=None, description="Minimum allowed value for numeric columns (null clears it).")
+    max_value: float | None = Field(default=None, description="Maximum allowed value for numeric columns (null clears it).")
+    pattern: str | None = Field(default=None, description="Regex the value must fully match (null clears it).")
+    options: list[str] | None = Field(default=None, description="Allowed values for enum columns (null clears it).")
+
+
 class DatasetSchema(BaseModel):
     """The user-defined schema of one dataset."""
 
