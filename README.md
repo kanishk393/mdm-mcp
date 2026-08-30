@@ -1,9 +1,9 @@
-# MDM MCP — Master Data Management for Conversational Agents
+# MDM MCP - Master Data Management for Conversational Agents
 
 A backend-only master data management system exposed as a **Model Context Protocol (MCP)
 server**. Non-technical users describe what they want to track in plain language; an AI
 agent (OpenCode, Claude Code, or any MCP client) creates the schema, captures records,
-and answers questions through **16 well-documented tools** — no GUI, no spreadsheet
+and answers questions through **16 well-documented tools** - no GUI, no spreadsheet
 skills, no SQL. The agent is the interface; the data lives in clean local JSON.
 
 ```
@@ -25,13 +25,13 @@ claude                 # Claude Code: approve the "master-data" project server w
 
 Then simply talk:
 
-> "I want to track candidates for the Java developer role — name, phone, experience,
+> "I want to track candidates for the Java developer role - name, phone, experience,
 > and which stage they're in."
 > "Add Rahul Sharma, 9876543210, 5 years, applied yesterday."
 > "Who applied in the last week with more than 3 years experience?"
 > "How many candidates are in each stage?"
 
-**Requirements**: Docker + (OpenCode *or* Claude Code). Nothing else — no Python, no
+**Requirements**: Docker + (OpenCode *or* Claude Code). Nothing else - no Python, no
 venv, no database server, no ports. Data persists in the Docker volume `mdm-data`
 (reset anytime: `docker volume rm mdm-data`).
 
@@ -55,8 +55,8 @@ Excel/Google Sheets: column discipline, filters, formulas, and data types all de
 training. Existing tools assume the user drives a GUI; AI agents remove that assumption.
 
 **Solution**: expose a *form-like* data backend to an agent. The agent acts as a
-data clerk — proposes a schema (like building a Google Form), captures records from
-conversation, validates them instantly, and answers questions — while the server
+data clerk - proposes a schema (like building a Google Form), captures records from
+conversation, validates them instantly, and answers questions - while the server
 enforces types, safety gates, and context limits.
 
 **Three personas anchor the design** (used as acceptance scenarios, not features):
@@ -65,7 +65,7 @@ enforces types, safety gates, and context limits.
 |---|---|
 | **Hiring partner** | Dataset per JD, enum stages, 100s of applicants, typo-tolerant fuzzy name search, bulk CSV import |
 | **Business owner** | Inventory/vendors/payments/employees, numeric + date validation, combined filters, bulk edits, totals |
-| **Individual** | Health logs, investments, schedules — date-heavy, low volume, high frequency |
+| **Individual** | Health logs, investments, schedules - date-heavy, low volume, high frequency |
 
 **User mental model**: `Workspace → Datasets → Columns (typed) → Rows`.
 
@@ -73,13 +73,13 @@ enforces types, safety gates, and context limits.
 
 ## 3. Tool catalog (16 tools)
 
-**Datasets & columns** — `create_dataset`, `list_datasets`, `describe_dataset`,
+**Datasets & columns** - `create_dataset`, `list_datasets`, `describe_dataset`,
 `add_column`, `update_column`, `remove_column`, `delete_dataset`
 
-**Rows** — `add_rows`, `get_row`, `update_rows`, `delete_rows`, `validate_rows`,
+**Rows** - `add_rows`, `get_row`, `update_rows`, `delete_rows`, `validate_rows`,
 `search_rows`, `summarize_dataset`
 
-**Files** — `import_rows`, `export_rows`
+**Files** - `import_rows`, `export_rows`
 
 Column types: `string, text, boolean, integer, float, phone, date, enum` with
 Google-Forms-style constraints: `required`, `default`, `min_value/max_value`,
@@ -92,27 +92,27 @@ Google-Forms-style constraints: `required`, `default`, `min_value/max_value`,
 This section is the heart of the assessment: the server is designed so that *whatever
 the user says, the agent can fulfil safely*.
 
-1. **Agent-coaching server instructions + skill file** — the server ships `instructions`
+1. **Agent-coaching server instructions + skill file** - the server ships `instructions`
    and a skill (`.opencode/skills/master-data-management/`, `.claude/skills/...`)
    teaching the agent to: propose schemas before creating, convert "yesterday" to an
    ISO date, null-fill unmentioned fields, answer with tables, and confirm before
    destructive actions.
-2. **Plain-language validation** — every failure is a sentence a human can act on:
+2. **Plain-language validation** - every failure is a sentence a human can act on:
    ```
    Column 'phone' must be a valid Indian mobile number (10 digits, optional +91 or 0 prefix).
    Column 'stage' must be one of: Applied, Screened, Rejected.
    ```
    Per-column checks report *all* problems in a row, not just the first.
-3. **Lenient inputs** — `"5"` becomes the number 5, `"true"` becomes a boolean,
+3. **Lenient inputs** - `"5"` becomes the number 5, `"true"` becomes a boolean,
    numeric row ids (`2` vs `"2"`) both work; empty CSV cells become nulls.
-4. **Typo-tolerant search** — `search_rows(fuzzy=true, query="Rahual")` finds
+4. **Typo-tolerant search** - `search_rows(fuzzy=true, query="Rahual")` finds
    "Rahul Sharma" (rapidfuzz, similarity-scored).
-5. **Safety gates, no undo needed** — delete/bulk-edit/schema-changing tools return a
+5. **Safety gates, no undo needed** - delete/bulk-edit/schema-changing tools return a
    preview + `requires_confirmation: true`; execution needs explicit `confirm`/`dry_run=false`.
-6. **Agent-context protection** — server-enforced: `limit` default 20 / max 100 with
+6. **Agent-context protection** - server-enforced: `limit` default 20 / max 100 with
    `total` + `next_offset` on every list, column projection, batch cap 100 rows,
    sample caps, aggregate-only summaries. The conversation never drowns in rows.
-7. **Structured results** — `{"ok": true, ...}` / `{"ok": false, "error": "<reason>"}`
+7. **Structured results** - `{"ok": true, ...}` / `{"ok": false, "error": "<reason>"}`
    so the agent converses about failures instead of crashing.
 
 ---
@@ -136,14 +136,14 @@ mdm_mcp/
 
 **Key decisions** (full rationale in `openspec/changes/archive/2026-08-30-mcp-master-data-management/design.md`):
 
-- **Local JSON over a database** — zero infrastructure, human-inspectable files,
+- **Local JSON over a database** - zero infrastructure, human-inspectable files,
   single-user localhost scope; storage sits behind a repository interface so MongoDB
   can slot in without touching tools.
-- **Pydantic dynamic validation** — one validator instance per dataset reused by
+- **Pydantic dynamic validation** - one validator instance per dataset reused by
   add/update/import/validate; pydantic gives type coercion and error localization for free.
-- **One FilterEngine, four consumers** — search, bulk update, bulk delete, export share
+- **One FilterEngine, four consumers** - search, bulk update, bulk delete, export share
   identical filter semantics.
-- **Official `mcp` SDK (FastMCP)** — tool JSON schemas derive automatically from typed
+- **Official `mcp` SDK (FastMCP)** - tool JSON schemas derive automatically from typed
   signatures + docstrings, so documentation debt is structurally impossible.
 
 ---
@@ -157,7 +157,7 @@ only after behavior contracts exist. All artifacts are preserved in
 | Artifact | Contents |
 |---|---|
 | `proposal.md` | Problem, personas, mental model, tool surface, deferred scope |
-| `specs/*/spec.md` | **4 capability specs** — `dataset-management`, `row-management`, `row-search`, `bulk-operations` — 23 requirements, each with WHEN/THEN scenarios that double as test cases |
+| `specs/*/spec.md` | **4 capability specs** - `dataset-management`, `row-management`, `row-search`, `bulk-operations` - 23 requirements, each with WHEN/THEN scenarios that double as test cases |
 | `design.md` | Decisions with rejected alternatives, risks/trade-offs (JSON rewrite cost, no locking, coercion surprises) |
 | `tasks.md` | 24 phase-ordered tasks, each with its own verification step |
 
@@ -173,10 +173,10 @@ literal pytest cases).
 | Phase | Commit | Delivered |
 |---|---|---|
 | Planning | `d018b0a`-era `03d0089` | All OpenSpec artifacts, validated |
-| 1 — Foundation | `79fbf0d` | Models, atomic JSON storage, validator, create/list/describe/add/get, 47 tests |
-| 2 — Schema & updates | `7803df7` | Column lifecycle, preview→confirm deletions, partial updates, dry-run validation |
-| 3 — Search & bulk | `0db2554` | Filter DSL, fuzzy search, summaries, bulk-by-filter, CSV/JSON import/export |
-| 4 — Polish | `4fa709d` | Docstring audit (automated), README, 3 persona walkthrough suites |
+| 1 - Foundation | `79fbf0d` | Models, atomic JSON storage, validator, create/list/describe/add/get, 47 tests |
+| 2 - Schema & updates | `7803df7` | Column lifecycle, preview→confirm deletions, partial updates, dry-run validation |
+| 3 - Search & bulk | `0db2554` | Filter DSL, fuzzy search, summaries, bulk-by-filter, CSV/JSON import/export |
+| 4 - Polish | `4fa709d` | Docstring audit (automated), README, 3 persona walkthrough suites |
 | Hardening | `7440227` | Console-script cwd fix, numeric ids, richer agent instructions |
 | Packaging | `a9ca732`, `6123890` | Docker one-command setup + 30-second demo |
 
@@ -203,7 +203,7 @@ Server: {"ok": true, "added": 0, "rejected": 1,
          "results": [{"row": 0, "status": "rejected",
                       "errors": ["Column 'phone' must be a valid Indian mobile number
                                  (10 digits, optional +91 or 0 prefix)."]}]}
-Agent:  Aman wasn't added yet — the phone column requires a valid Indian mobile
+Agent:  Aman wasn't added yet - the phone column requires a valid Indian mobile
         number, so "123" was rejected. Do you have his full number?
 ```
 
@@ -232,18 +232,18 @@ The skill is a self-contained folder (`SKILL.md` operating manual + `reference.m
 full tool API reference). Copy it into either client's skills directory:
 
 ```bash
-# Claude Code — project-level (auto-detected in that project)
+# Claude Code - project-level (auto-detected in that project)
 mkdir -p /path/to/project/.claude/skills
 cp -r .claude/skills/master-data-management /path/to/project/.claude/skills/
 
-# Claude Code — personal (all projects)
+# Claude Code - personal (all projects)
 cp -r .claude/skills/master-data-management ~/.claude/skills/
 
-# OpenCode — project-level
+# OpenCode - project-level
 mkdir -p /path/to/project/.opencode/skills
 cp -r .opencode/skills/master-data-management /path/to/project/.opencode/skills/
 
-# OpenCode — global
+# OpenCode - global
 cp -r .opencode/skills/master-data-management ~/.config/opencode/skills/
 ```
 
@@ -259,15 +259,15 @@ that loads the skill guidance on demand.
 ## 12. Restarting & resuming (your data never goes anywhere)
 
 There is **no long-running server to babysit**. The MCP client (OpenCode / Claude Code)
-starts the container automatically each session and stops it when done (`--rm`) — that
+starts the container automatically each session and stops it when done (`--rm`) - that
 is by design. Your data lives outside the container and survives everything:
 
 | What closed | How to resume |
 |---|---|
 | Terminal / OpenCode / Claude Code session | Just relaunch `opencode` or `claude` in this folder. The container starts on demand; all datasets are exactly where you left them. |
 | Docker Desktop | Start it, then relaunch your client. Same behavior. |
-| Machine reboot | Same — relaunch the client. Nothing else to do. |
-| Local (non-Docker) run | Re-run `.venv/bin/mdm-mcp` (or just use your client config — it spawns it). Data is in `./data`. |
+| Machine reboot | Same - relaunch the client. Nothing else to do. |
+| Local (non-Docker) run | Re-run `.venv/bin/mdm-mcp` (or just use your client config - it spawns it). Data is in `./data`. |
 
 **Where your data is:**
 
@@ -275,7 +275,7 @@ is by design. Your data lives outside the container and survives everything:
   (inspect: `docker run --rm -v mdm-data:/data alpine sh -c "ls /data && cat /data/<dataset>/rows.json"`)
 - Local setup → `./data/<dataset>/` (plain JSON, human-readable)
 
-**Quick resume check** — open your client and ask *"what am I tracking?"* (`list_datasets`),
+**Quick resume check** - open your client and ask *"what am I tracking?"* (`list_datasets`),
 or verify from the shell:
 
 ```bash
@@ -292,7 +292,7 @@ docker volume rm mdm-data         # wipe all data and start fresh
 docker rmi mdm-mcp:latest         # remove the image (setup.sh rebuilds it)
 ```
 
-Note: local runs store data in `./data`, Docker runs in the volume — these are two
+Note: local runs store data in `./data`, Docker runs in the volume - these are two
 different stores. Pick one mode and stay with it; switching modes does not lose data,
 it just looks at the other location.
 
@@ -301,7 +301,7 @@ it just looks at the other location.
 1. `bash setup.sh` → handshake smoke test passes
 2. `bash demo/demo.sh` → import with rejects, fuzzy match, dry-run bulk edit, summary
 3. Start `opencode` (or `claude`) in this folder and hold a natural conversation
-4. Try a mistake on purpose (bad phone, unknown person) — observe recovery UX
+4. Try a mistake on purpose (bad phone, unknown person) - observe recovery UX
 5. Inspect `data/` (or `docker run --rm -v mdm-data:/data alpine cat /data/<dataset>/rows.json`)
-   — the storage is readable JSON
-6. `.venv/bin/python -m pytest` (local setup) — 127 tests green
+   - the storage is readable JSON
+6. `.venv/bin/python -m pytest` (local setup) - 127 tests green

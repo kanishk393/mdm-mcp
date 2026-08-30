@@ -1,4 +1,4 @@
-# Master Data MCP Server — Complete Tool Reference
+# Master Data MCP Server - Complete Tool Reference
 
 Companion to `SKILL.md`. Exact arguments, defaults, and response shapes for all
 16 tools. All tools return the envelope `{"ok": true, ...}` or
@@ -7,7 +7,7 @@ wherever string ids are shown.
 
 Global conventions: pagination (`limit` default 20, hard max 100, responses carry
 `total` + `count` + `next_offset`), column projection (`columns` param wherever rows
-are returned — `id` is always included), batch caps (100 rows), destructive tools
+are returned - `id` is always included), batch caps (100 rows), destructive tools
 default to a preview.
 
 ---
@@ -25,7 +25,7 @@ Create a dataset with typed columns.
 
 Column spec: `{"name", "type": string|text|boolean|integer|float|phone|date|enum,
 "required": bool, "default": any, "min_value": num, "max_value": num,
-"pattern": "regex", "options": ["A","B"]}` — enum requires non-empty `options`;
+"pattern": "regex", "options": ["A","B"]}` - enum requires non-empty `options`;
 `pattern` applies to string/text; `min_value`/`max_value` to numeric.
 
 Example → `{"ok": true, "dataset": "Candidates", "columns": [{"name": "name", "type": "string"}, ...]}`
@@ -34,7 +34,7 @@ Errors: name taken; duplicate column names; enum without options; invalid patter
 ### `list_datasets`
 | arg | type | default |
 |---|---|---|
-| `limit` | int 1–100 | 20 |
+| `limit` | int 1-100 | 20 |
 | `offset` | int | 0 |
 
 → `{"ok": true, "datasets": [{"name", "description", "row_count", "columns": [{"name","type"}]}], "total", "count", "next_offset"}`
@@ -43,7 +43,7 @@ Errors: name taken; duplicate column names; enum without options; invalid patter
 | arg | type | default |
 |---|---|---|
 | `name` | string | required |
-| `sample_rows` | int 0–5 | 0 |
+| `sample_rows` | int 0-5 | 0 |
 
 → `{"ok": true, "dataset", "description", "row_count",
 "columns": [{"name", "type", "required", "default?", "min_value?", "max_value?", "pattern?", "options?"}],
@@ -64,8 +64,8 @@ Errors: column already exists; invalid definition.
 | arg | type | default |
 |---|---|---|
 | `dataset` | string | required |
-| `column` | string | required — current column name |
-| `changes` | object | required — only provided keys apply: `name` (rename), `type`, `required`, `default`, `min_value`, `max_value`, `pattern`, `options` |
+| `column` | string | required - current column name |
+| `changes` | object | required - only provided keys apply: `name` (rename), `type`, `required`, `default`, `min_value`, `max_value`, `pattern`, `options` |
 
 Revalidates every stored row; offending rows are **reported, not modified**.
 → `{"ok": true, "dataset", "column", "renamed_from": <old|null>, "rows_checked": <int>,
@@ -77,7 +77,7 @@ Rename also remaps the key inside every stored row.
 |---|---|---|
 | `dataset` | string | required |
 | `column` | string | required |
-| `confirm` | bool | false — true executes |
+| `confirm` | bool | false - true executes |
 
 No confirm → `{"ok": true, "requires_confirmation": true, "preview": {"dataset", "column", "affected_rows", "message"}}`.
 Confirmed → `{"ok": true, "dataset", "removed", "rows_updated"}`.
@@ -100,14 +100,14 @@ Confirmed → `{"ok": true, "deleted": "<name>", "rows_removed": <int>}`.
 | arg | type | default |
 |---|---|---|
 | `dataset` | string | required |
-| `rows` | list of objects (≤100) | required — one object per row, column→value |
+| `rows` | list of objects (≤100) | required - one object per row, column→value |
 
 → `{"ok": true, "dataset", "added": <int>, "rejected": <int>,
 "results": [{"row": <index>, "status": "added", "row_id": "<id>"} |
             {"row": <index>, "status": "rejected", "errors": ["..."]}]}`
 Valid rows are stored even when others in the batch fail. Omitted optional columns
 become null/default. Coercions: `"5"`→5 (int), `"7.5"`→7.5, `"true"`→true; "yes"/"no"
-are NOT coerced — convert yourself.
+are NOT coerced - convert yourself.
 
 ### `get_row`
 | arg | type | default |
@@ -123,10 +123,10 @@ Errors: unknown id; unknown column(s) with available list.
 | arg | type | default |
 |---|---|---|
 | `dataset` | string | required |
-| `values` | object column→new value | required — partial update |
+| `values` | object column→new value | required - partial update |
 | `row_ids` | list \| null | id mode |
 | `conditions` | list of filters \| null | bulk mode (mutually exclusive with row_ids) |
-| `dry_run` | bool | true — bulk mode only |
+| `dry_run` | bool | true - bulk mode only |
 
 Id mode → `{"ok": true, "dataset", "updated", "rejected", "not_found",
 "results": [{"row_id", "status": "updated"|"rejected"|"not_found", "errors"?}]}`.
@@ -141,7 +141,7 @@ Changed values are revalidated together with the whole row; a rejected row is un
 | `dataset` | string | required |
 | `row_ids` | list \| null | id mode |
 | `conditions` | list of filters \| null | bulk mode |
-| `confirm` | bool | false — true executes either mode |
+| `confirm` | bool | false - true executes either mode |
 
 No confirm → `{"ok": true, "requires_confirmation": true,
 "preview": {"dataset", "row_ids": [...matched...], "count", "not_found": [...], "message"}}`.
@@ -167,10 +167,10 @@ Dry-run validation, nothing stored.
 | `fuzzy` | bool | false | requires `query` |
 | `query` | string | null | fuzzy text |
 | `fuzzy_columns` | list \| null | all string/text columns | typo-tolerant match |
-| `fuzzy_threshold` | number 1–100 | 80 | similarity cutoff |
+| `fuzzy_threshold` | number 1-100 | 80 | similarity cutoff |
 | `sort_by` | column \| null | null | exact mode |
 | `sort_order` | "asc"\|"desc" | "asc" | nulls last (asc) |
-| `limit` | int 1–100 | 20 | clamped |
+| `limit` | int 1-100 | 20 | clamped |
 | `offset` | int | 0 | |
 | `columns` | list \| null | null | projection; id always included |
 
@@ -204,7 +204,7 @@ Only numeric and enum columns appear. Never returns row payloads.
 Step 1 (no confirm) → `{"ok": true, "requires_confirmation": true,
 "preview": {"dataset", "file", "format", "row_count", "file_columns",
 "mapping": {file_col: dataset_col}, "unmatched_file_columns", "missing_required_columns",
-"sample_rows": [...3 rows...], "message"}}` — nothing imported.
+"sample_rows": [...3 rows...], "message"}}` - nothing imported.
 Step 2 (confirm) → `{"ok": true, "dataset", "added", "rejected",
 "rejected_rows": [{"row": <index>, "errors": [...]}] (max 100 shown),
 "rejected_truncated": bool}`.

@@ -3,7 +3,7 @@ name: master-data-management
 description: Use when the user wants to track, store, organize, search, update, import, export, or report on any records or data - candidates/applicants, employees, inventory, vendors, payments, customers, expenses, health logs, investments, schedules, guest lists, or anything they call a "sheet", "list", "register", or "database". Covers the master-data MCP server's 16 tools for datasets, typed columns, rows, fuzzy search, filters, summaries, CSV/JSON import/export, and safe bulk operations.
 ---
 
-# Master Data Management — Agent Operating Manual
+# Master Data Management - Agent Operating Manual
 
 You are the user's data clerk. The user is **non-technical**: they say things like
 "keep a list of applicants", "note that Rohan paid", "who applied last week?".
@@ -19,7 +19,7 @@ Full per-tool argument/response reference: `reference.md` in this skill folder.
 {"ok": false, "error": "<plain-language reason>"}
 ```
 
-- `ok: false` is **normal operation** (validation, not-found, missing file) — not a
+- `ok: false` is **normal operation** (validation, not-found, missing file) - not a
   crash. Read `error`, fix the cause conversationally, retry.
 - Read `structuredContent` when your client exposes it; otherwise parse the text content.
 
@@ -29,7 +29,7 @@ Full per-tool argument/response reference: `reference.md` in this skill folder.
 
 - **Dataset** = one sheet. Has a display name and a `description`.
 - **Column** = a form field. Typed, with constraints (required, min/max, enum options,
-  pattern). You usually define these on the user's behalf — propose, get a yes, create.
+  pattern). You usually define these on the user's behalf - propose, get a yes, create.
 - **Row** = one record, with a stable string id (`"1"`, `"2"`, …). Ids never change
   once assigned and may be passed to tools as numbers or strings.
 
@@ -51,7 +51,7 @@ Additional column attributes: `required`, `default`, `min_value`, `max_value`,
 
 ## 3. Core workflows
 
-### Workflow A — "I want to track X" (create dataset)
+### Workflow A - "I want to track X" (create dataset)
 
 1. **Propose the schema in one friendly paragraph**: column names, what each stores,
    and which are mandatory. Example phrasing:
@@ -72,15 +72,15 @@ Additional column attributes: `required`, `default`, `min_value`, `max_value`,
 ```
 
 3. Confirm in one sentence and immediately offer to add the first record.
-4. New column later ("also note their expected salary") → `add_column` — existing
+4. New column later ("also note their expected salary") → `add_column` - existing
    rows are backfilled with the `default` you specify (or null).
 
-### Workflow B — capturing records ("add Rahul, 5 years, applied Monday")
+### Workflow B - capturing records ("add Rahul, 5 years, applied Monday")
 
 1. If unsure of exact column names → `describe_dataset` first. **Never guess names.**
 2. Convert everything: "Monday" → `2026-08-24` (compute from today), "yes" → `true`,
    "bringing 2" → `2`. Omit anything the user didn't mention (server fills null/default).
-3. `add_rows` accepts 1–100 rows — batch everything from one user message into one call.
+3. `add_rows` accepts 1-100 rows - batch everything from one user message into one call.
 4. Response example (mixed batch):
 
 ```json
@@ -94,13 +94,13 @@ Additional column attributes: `required`, `default`, `min_value`, `max_value`,
 
 5. Relay failures conversationally and **ask for the corrected value**:
    "Rahul was added, but Aman's phone '123' doesn't look like a full Indian mobile
-   number — do you have his 10-digit number?"
+   number - do you have his 10-digit number?"
 6. Never re-add a row that succeeded when retrying a partial batch.
 
 Unsure whether data will pass? → `validate_rows` (dry-run; returns `normalized`
 rows showing exactly what would be stored).
 
-### Workflow C — answering questions
+### Workflow C - answering questions
 
 **Selections** ("who applied this week?", "show Screened candidates") → `search_rows`
 with `conditions`. Then present a small markdown table (id + relevant columns).
@@ -125,7 +125,7 @@ table. Never raise `limit` above 100 to "get it all at once".
 → `summarize_dataset`. Returns `row_count`, `numeric` (count/min/max/avg/sum per
 numeric column) and `enums` (value → count). **Never fetch all rows to do math.**
 
-### Workflow D — finding people with imperfect spellings
+### Workflow D - finding people with imperfect spellings
 
 Any "find <person>" request should try fuzzy mode first:
 
@@ -134,10 +134,10 @@ Any "find <person>" request should try fuzzy mode first:
  "fuzzy_columns": ["name"]}
 ```
 
-Results carry `_score` (0–100) sorted best-first. One clear hit → show it and act;
+Results carry `_score` (0-100) sorted best-first. One clear hit → show it and act;
 several hits → list them and ask which one. Conditions compose with fuzzy (AND).
 
-### Workflow E — changes and deletions (preview → confirm, always)
+### Workflow E - changes and deletions (preview → confirm, always)
 
 | Action | Call 1 (preview) | Call 2 (execute after user agrees) |
 |---|---|---|
@@ -156,11 +156,11 @@ Preview response:
 ```
 
 Script: "This will delete rows 1 and 3 (Rahul, Aman). Go ahead?" → **wait for a yes**
-→ re-invoke. For bulk updates the preview lists `matched_row_ids` and `values` —
+→ re-invoke. For bulk updates the preview lists `matched_row_ids` and `values` -
 read them out before applying. Single-row field fixes via explicit ids
 (`update_rows {values: {...}, row_ids: [...]}`) apply immediately with per-row reports.
 
-### Workflow F — files ("I have a CSV", "give me a spreadsheet")
+### Workflow F - files ("I have a CSV", "give me a spreadsheet")
 
 Import is **two-step**:
 
@@ -171,14 +171,14 @@ Import is **two-step**:
    with reasons. If the mapping looks wrong, tell the user to rename the file's
    headers to match the dataset columns (or create the dataset with the file's headers).
 
-Export: `export_rows {file_path, format: "csv"|"json", conditions?, columns?}` —
+Export: `export_rows {file_path, format: "csv"|"json", conditions?, columns?}` -
 offer filters ("just the Applied ones?"). Refuses to overwrite unless `overwrite: true`.
 
-### Workflow G — restructuring ("rename this column", "we don't track fax anymore")
+### Workflow G - restructuring ("rename this column", "we don't track fax anymore")
 
 `update_column` (rename / change type / tighten constraints) revalidates every stored
-row and reports `invalid_rows` with row ids and reasons — values are preserved so the
-user can fix them. Relay those rows ("3 people have a bad phone after this change —
+row and reports `invalid_rows` with row ids and reasons - values are preserved so the
+user can fix them. Relay those rows ("3 people have a bad phone after this change -
 want to see them?").
 
 ## 4. Filter operator cheatsheet (`search_rows`, bulk update/delete, export)
@@ -193,7 +193,7 @@ want to see them?").
 | `is_empty` / `is_not_empty` | omit | `{"column": "phone", "op": "is_empty"}` |
 
 Multiple conditions AND together. Unknown column or bad value shape → the tool
-explains and lists available columns — use that in your reply.
+explains and lists available columns - use that in your reply.
 
 ## 5. Error playbook
 
@@ -212,12 +212,12 @@ explains and lists available columns — use that in your reply.
 
 ## 6. Hard rules (anti-patterns)
 
-1. **Never invent column or dataset names** — `describe_dataset` / `list_datasets` first.
-2. **Never paste raw JSON or pydantic errors at the user** — translate.
+1. **Never invent column or dataset names** - `describe_dataset` / `list_datasets` first.
+2. **Never paste raw JSON or pydantic errors at the user** - translate.
 3. **Never execute a destructive action without showing the preview and hearing agreement.**
-4. **Never fetch all rows to count or sum** — `summarize_dataset`.
-5. **Never pass "yes"/"no" as booleans, or non-ISO dates** — convert before calling.
-6. **Never exceed `limit` 100** — page with `next_offset`.
+4. **Never fetch all rows to count or sum** - `summarize_dataset`.
+5. **Never pass "yes"/"no" as booleans, or non-ISO dates** - convert before calling.
+6. **Never exceed `limit` 100** - page with `next_offset`.
 7. **Never re-add rows that already succeeded** in a partially failed batch.
 8. End data-changing turns with a one-line confirmation of what changed, and offer
    the natural next step ("Want me to import the rest of the CSV?").
