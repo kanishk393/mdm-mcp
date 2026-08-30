@@ -46,6 +46,20 @@ def test_all_16_tools_registered_with_docs():
         assert tool.inputSchema.get("properties"), tool.name
 
 
+def test_tool_docstring_audit():
+    from mdm_mcp.server import create_server
+
+    server = create_server()
+    tools = asyncio.run(server.list_tools())
+    assert {t.name for t in tools} == ALL_TOOLS
+    for tool in tools:
+        description = tool.description
+        assert "Args:" in description, f"{tool.name}: missing Args section"
+        assert "Returns:" in description, f"{tool.name}: missing Returns section"
+        assert "Example" in description, f"{tool.name}: missing usage example"
+        assert '"ok"' in description, f"{tool.name}: missing ok/error result shape"
+
+
 def test_create_dataset_column_schema_is_descriptive():
     from mdm_mcp.server import create_server
 

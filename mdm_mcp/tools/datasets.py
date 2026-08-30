@@ -70,6 +70,9 @@ def register_dataset_tools(mcp: FastMCP) -> None:
         Returns:
             {"ok": true, "datasets": [{"name", "description", "row_count", "columns"}],
              "total": <int>, "count": <int>, "next_offset": <int or null>}.
+
+        Example:
+            list_datasets(limit=50)
         """
         return service().list_datasets(limit, offset)
 
@@ -91,6 +94,9 @@ def register_dataset_tools(mcp: FastMCP) -> None:
              "columns": [{"name", "type", "required", "default?", "options?", ...}],
              "samples": [{"id", ...}]} on success,
             {"ok": false, "error": "<reason>"} when the dataset does not exist.
+
+        Example:
+            describe_dataset(name="Candidates", sample_rows=3)
         """
         return service().describe_dataset(name, sample_rows)
 
@@ -111,6 +117,9 @@ def register_dataset_tools(mcp: FastMCP) -> None:
             {"ok": true, "dataset", "column", "type", "backfilled_rows": <int>} on success,
             {"ok": false, "error": "<reason>"} when the column already exists or the
             definition is invalid (e.g. enum without options).
+
+        Example:
+            add_column(dataset="Candidates", column={"name": "expected_salary", "type": "float", "min_value": 0})
         """
         return service().add_column(dataset, column.model_dump())
 
@@ -132,7 +141,11 @@ def register_dataset_tools(mcp: FastMCP) -> None:
 
         Returns:
             {"ok": true, "dataset", "column", "renamed_from": <old name or null>,
-             "rows_checked": <int>, "invalid_rows": {"<row_id>": ["<errors>"]}} on success.
+             "rows_checked": <int>, "invalid_rows": {"<row_id>": ["<errors>"]}} on success,
+            {"ok": false, "error": "<reason>"} for unknown columns or invalid changes.
+
+        Example:
+            update_column(dataset="Candidates", column="experience", changes={"max_value": 20})
         """
         return service().update_column(dataset, column, changes)
 
@@ -154,6 +167,9 @@ def register_dataset_tools(mcp: FastMCP) -> None:
             {"ok": true, "dataset", "removed", "rows_updated"} after confirmation,
             {"ok": true, "requires_confirmation": true, "preview": {...}} without,
             {"ok": false, "error": "<reason>"} for unknown columns.
+
+        Example:
+            remove_column(dataset="Candidates", column="temporary_note", confirm=false)
         """
         return service().remove_column(dataset, column, confirm)
 
@@ -173,5 +189,8 @@ def register_dataset_tools(mcp: FastMCP) -> None:
         Returns:
             {"ok": true, "deleted": "<name>", "rows_removed": <int>} after confirmation,
             {"ok": true, "requires_confirmation": true, "preview": {...}} without.
+
+        Example:
+            delete_dataset(name="Old JD", confirm=false)
         """
         return service().delete_dataset(name, confirm)

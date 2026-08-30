@@ -31,7 +31,7 @@
 
 ## 4. Phase 4 — Polish (`docs: tool docs & persona walkthroughs`)
 
-- [ ] 4.1 Docstring/example audit: every tool has purpose, args, returns, ok/error shape, and a usage example; verify an automated test asserts non-trivial docstrings on all tools
-- [ ] 4.2 Write README with setup, MDM_DATA_DIR, and OpenCode + Claude Code MCP configuration snippets; verify instructions match pyproject entry point
-- [ ] 4.3 Add persona walkthrough integration tests (recruiter: dataset per JD + fuzzy search + bulk import; business owner: inventory summarize + bulk edit; individual: date-sorted health log); verify all pass
-- [ ] 4.4 Run `openspec validate` green and commit `docs: tool docs & persona walkthroughs`
+- [x] 4.1 Docstring/example audit: every tool has purpose, args, returns, ok/error shape, and a usage example; verify an automated test asserts non-trivial docstrings on all tools
+- [x] 4.2 Write README with setup, MDM_DATA_DIR, and OpenCode + Claude Code MCP configuration snippets; verify instructions match pyproject entry point
+- [x] 4.3 Add persona walkthrough integration tests (recruiter: dataset per JD + fuzzy search + bulk import; business owner: inventory summarize + bulk edit; individual: date-sorted health log); verify all pass
+- [x] 4.4 Run `openspec validate` green and commit `docs: tool docs & persona walkthroughs`

@@ -66,6 +66,9 @@ def register_row_tools(mcp: FastMCP) -> None:
         Returns:
             {"ok": true, "dataset", "row": {"id", ...requested columns}} on success,
             {"ok": false, "error": "<reason>"} for unknown ids or columns.
+
+        Example:
+            get_row(dataset="Candidates", row_id="12", columns=["name", "phone"])
         """
         return service().get_row(dataset, row_id, columns)
 
@@ -156,6 +159,9 @@ def register_row_tools(mcp: FastMCP) -> None:
             {"ok": true, "dataset", "total": <int>, "valid": <int>, "invalid": <int>,
              "results": [{"row": <index>, "status": "valid", "normalized": {...}} |
                          {"row": <index>, "status": "invalid", "errors": ["..."]}]}.
+
+        Example:
+            validate_rows(dataset="Candidates", rows=[{"name": "Asha", "phone": "9876543210"}])
         """
         return service().validate_rows(dataset, rows)
 
@@ -244,5 +250,8 @@ def register_row_tools(mcp: FastMCP) -> None:
             {"ok": true, "dataset", "row_count": <int>,
              "numeric": {"<column>": {"count", "min", "max", "avg", "sum"} or {"count": 0}},
              "enums": {"<column>": {"<value>": <count>}}}.
+
+        Example:
+            summarize_dataset(dataset="Inventory")
         """
         return service().summarize_dataset(dataset)
