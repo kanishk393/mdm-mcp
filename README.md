@@ -250,7 +250,46 @@ cp -r .opencode/skills/master-data-management ~/.config/opencode/skills/
 Then start a conversation with the server attached (`opencode.json` / `.mcp.json`
 from `setup.sh`, or `claude mcp add master-data -- docker run -i --rm -v mdm-data:/data mdm-mcp:latest`).
 
-## 12. Evaluation checklist
+## 12. Restarting & resuming (your data never goes anywhere)
+
+There is **no long-running server to babysit**. The MCP client (OpenCode / Claude Code)
+starts the container automatically each session and stops it when done (`--rm`) — that
+is by design. Your data lives outside the container and survives everything:
+
+| What closed | How to resume |
+|---|---|
+| Terminal / OpenCode / Claude Code session | Just relaunch `opencode` or `claude` in this folder. The container starts on demand; all datasets are exactly where you left them. |
+| Docker Desktop | Start it, then relaunch your client. Same behavior. |
+| Machine reboot | Same — relaunch the client. Nothing else to do. |
+| Local (non-Docker) run | Re-run `.venv/bin/mdm-mcp` (or just use your client config — it spawns it). Data is in `./data`. |
+
+**Where your data is:**
+
+- Docker setup → Docker volume `mdm-data` → `/data/<dataset>/schema.json` + `rows.json`
+  (inspect: `docker run --rm -v mdm-data:/data alpine sh -c "ls /data && cat /data/<dataset>/rows.json"`)
+- Local setup → `./data/<dataset>/` (plain JSON, human-readable)
+
+**Quick resume check** — open your client and ask *"what am I tracking?"* (`list_datasets`),
+or verify from the shell:
+
+```bash
+docker run --rm -v mdm-data:/data alpine ls /data        # Docker setup
+ls ./data                                                # local setup
+```
+
+**Maintenance one-liners:**
+
+```bash
+bash setup.sh                     # rebuild/re-verify/re-generate client configs (safe, cached)
+docker volume rm mdm-data         # wipe all data and start fresh
+docker rmi mdm-mcp:latest         # remove the image (setup.sh rebuilds it)
+```
+
+Note: local runs store data in `./data`, Docker runs in the volume — these are two
+different stores. Pick one mode and stay with it; switching modes does not lose data,
+it just looks at the other location.
+
+## 13. Evaluation checklist
 
 1. `bash setup.sh` → handshake smoke test passes
 2. `bash demo/demo.sh` → import with rejects, fuzzy match, dry-run bulk edit, summary
