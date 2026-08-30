@@ -37,14 +37,14 @@ Full per-tool argument/response reference: `reference.md` in this skill folder.
 
 | User says | Column type | Notes |
 |---|---|---|
-| yes/no, done?, RSVPed | `boolean` | Convert "yes"→`true`, "no"→`false` yourself. Never pass "yes". |
+| yes/no, done?, RSVPed | `boolean` | Convert "yes"→`true`, "no"→`false` yourself. The server REJECTS "yes"/"no"; only true/false/1/0 are accepted. |
 | how many, quantity, count | `integer` | Add `min_value: 0` for counts. |
 | money, price, weight, years | `float` | Add `min_value` when negatives are nonsense. |
 | name, title, city | `string` | One line. |
 | notes, description, comments | `text` | Long free text. |
 | a fixed choice list | `enum` | You MUST supply `options`; values must match exactly. |
 | dates | `date` | ISO `YYYY-MM-DD` only. Convert "yesterday"/"Monday" yourself using today's date. |
-| phone numbers | `phone` | Indian mobile: 10 digits starting 6-9, optional `+91`/`0` prefix. Strip spaces/dashes from digits before sending. |
+| phone numbers | `phone` | Indian mobile: 10 digits starting 6-9, optional `+91`/`0` prefix. Spaces and dashes inside the number are handled automatically. |
 
 Additional column attributes: `required`, `default`, `min_value`, `max_value`,
 `pattern` (regex for string/text), `options` (enum).

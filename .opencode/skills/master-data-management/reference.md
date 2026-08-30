@@ -23,6 +23,8 @@ Create a dataset with typed columns.
 | `columns` | list | required | ≥1; see Column spec below |
 | `description` | string | `""` | what this dataset tracks |
 
+Validation notes: booleans accept only true/false/1/0 ("yes"/"no" are rejected); phone values may contain internal spaces/dashes (auto-ignored); numeric bounds are reported in human-readable form.
+
 Column spec: `{"name", "type": string|text|boolean|integer|float|phone|date|enum,
 "required": bool, "default": any, "min_value": num, "max_value": num,
 "pattern": "regex", "options": ["A","B"]}` - enum requires non-empty `options`;
@@ -106,8 +108,8 @@ Confirmed → `{"ok": true, "deleted": "<name>", "rows_removed": <int>}`.
 "results": [{"row": <index>, "status": "added", "row_id": "<id>"} |
             {"row": <index>, "status": "rejected", "errors": ["..."]}]}`
 Valid rows are stored even when others in the batch fail. Omitted optional columns
-become null/default. Coercions: `"5"`→5 (int), `"7.5"`→7.5, `"true"`→true; "yes"/"no"
-are NOT coerced - convert yourself.
+become null/default. Coercions: `"5"`→5 (int), `"7.5"`→7.5, `"true"`→true. "yes"/"no"/
+"on"/"off" are REJECTED with a clear error - convert them to true/false yourself.
 
 ### `get_row`
 | arg | type | default |
@@ -198,6 +200,7 @@ Only numeric and enum columns appear. Never returns row payloads.
 |---|---|---|---|
 | `dataset` | string | required | |
 | `file_path` | string | required | .csv or .json on the server's machine |
+| `create_if_missing` | bool | false | when the dataset does not exist, create it first with one string column per file header |
 | `format` | "auto"\|"csv"\|"json" | "auto" | infers from extension |
 | `confirm` | bool | false | two-step import |
 

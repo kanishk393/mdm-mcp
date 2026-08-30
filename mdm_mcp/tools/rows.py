@@ -6,7 +6,6 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from mdm_mcp.models.schema import FilterCondition
 from mdm_mcp.services.row_service import RowService
 from mdm_mcp.tools.base import get_services, ok_result
 
@@ -78,7 +77,7 @@ def register_row_tools(mcp: FastMCP) -> None:
         dataset: str,
         values: dict[str, Any],
         row_ids: list[str | int] | None = None,
-        conditions: list[FilterCondition] | None = None,
+        conditions: list[dict[str, Any]] | None = None,
         dry_run: bool = True,
     ) -> dict[str, Any]:
         """Update rows by explicit ids, or in bulk for every row matching a filter.
@@ -107,15 +106,14 @@ def register_row_tools(mcp: FastMCP) -> None:
             update_rows(dataset="Candidates", values={"stage": "Rejected"},
                         conditions=[{"column": "score", "op": "lt", "value": 3}], dry_run=true)
         """
-        payload_conditions = [c.model_dump() for c in conditions] if conditions else None
-        return service().update_rows(dataset, values, row_ids=row_ids, conditions=payload_conditions, dry_run=dry_run)
+        return service().update_rows(dataset, values, row_ids=row_ids, conditions=conditions, dry_run=dry_run)
 
     @mcp.tool()
     @ok_result
     def delete_rows(
         dataset: str,
         row_ids: list[str | int] | None = None,
-        conditions: list[FilterCondition] | None = None,
+        conditions: list[dict[str, Any]] | None = None,
         confirm: bool = False,
     ) -> dict[str, Any]:
         """Delete rows by explicit ids, or in bulk for every row matching a filter.
@@ -138,8 +136,7 @@ def register_row_tools(mcp: FastMCP) -> None:
         Example:
             delete_rows(dataset="Candidates", conditions=[{"column": "stage", "op": "eq", "value": "Rejected"}])
         """
-        payload_conditions = [c.model_dump() for c in conditions] if conditions else None
-        return service().delete_rows(dataset, row_ids=row_ids, conditions=payload_conditions, confirm=confirm)
+        return service().delete_rows(dataset, row_ids=row_ids, conditions=conditions, confirm=confirm)
 
     @mcp.tool()
     @ok_result
@@ -169,7 +166,7 @@ def register_row_tools(mcp: FastMCP) -> None:
     @ok_result
     def search_rows(
         dataset: str,
-        conditions: list[FilterCondition] | None = None,
+        conditions: list[dict[str, Any]] | None = None,
         fuzzy: bool = False,
         query: str | None = None,
         fuzzy_columns: list[str] | None = None,
@@ -218,10 +215,9 @@ def register_row_tools(mcp: FastMCP) -> None:
             ], sort_by="applied_on", sort_order="desc", columns=["name", "stage"])
             search_rows(dataset="Candidates", fuzzy=true, query="Rahual", fuzzy_columns=["name"])
         """
-        payload_conditions = [c.model_dump() for c in conditions] if conditions else None
         return service().search_rows(
             dataset,
-            conditions=payload_conditions,
+            conditions=conditions,
             fuzzy=fuzzy,
             query=query,
             fuzzy_columns=fuzzy_columns,

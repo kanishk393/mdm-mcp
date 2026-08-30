@@ -35,6 +35,8 @@ TYPE_MESSAGES: dict[ColumnType, str] = {
 
 _TYPE_ADAPTERS: dict[ColumnType, TypeAdapter] = {}
 
+_INVALID_BOOL = object()
+
 
 def _type_adapter(column_type: ColumnType) -> TypeAdapter:
     if column_type not in _TYPE_ADAPTERS:
@@ -65,16 +67,38 @@ class RowValidator:
                 issues.append(f"Column '{key}' is not defined in this dataset. Available columns: {self._available}.")
         for col in self.schema.columns:
             raw = row[col.name] if col.name in row else col.default
-            try:
-                value = _type_adapter(col.type).validate_python(raw)
-            except ValidationError:
-                issues.append(f"Column '{col.name}' {TYPE_MESSAGES.get(col.type, 'must be text')}.")
-                continue
+            if col.type is ColumnType.BOOLEAN:
+                value = self._coerce_bool(raw)
+                if value is _INVALID_BOOL:
+                    issues.append(f"Column '{col.name}' must be true or false.")
+                    continue
+            else:
+                try:
+                    value = _type_adapter(col.type).validate_python(raw)
+                except ValidationError:
+                    issues.append(f"Column '{col.name}' {TYPE_MESSAGES.get(col.type, 'must be text')}.")
+                    continue
             if col.required and (value is None or (isinstance(value, str) and not value.strip())):
                 issues.append(f"Column '{col.name}' is required.")
                 continue
             issues.extend(self._constraint_issues(col, value))
         return issues
+
+    @staticmethod
+    def _coerce_bool(raw):
+        if raw is None:
+            return None
+        if isinstance(raw, bool):
+            return raw
+        if isinstance(raw, int) and raw in (0, 1):
+            return bool(raw)
+        if isinstance(raw, str):
+            lowered = raw.strip().lower()
+            if lowered in {"true", "1"}:
+                return True
+            if lowered in {"false", "0"}:
+                return False
+        return _INVALID_BOOL
 
     def normalize_row(self, row: dict) -> dict:
         coerced = self._model.model_validate(row)
@@ -87,7 +111,8 @@ class RowValidator:
             if str(value) not in [str(option) for option in (col.options or [])]:
                 return [f"Column '{col.name}' must be one of: {', '.join(col.options or [])}."]
         if col.type is ColumnType.PHONE:
-            if not re.fullmatch(col.pattern, str(value).strip()):
+            digits = re.sub(r"[\s\-\(\)]", "", str(value))
+            if not re.fullmatch(col.pattern, digits):
                 return [f"Column '{col.name}' must be a valid Indian mobile number (10 digits, optional +91 or 0 prefix)."]
         if col.type is ColumnType.DATE:
             try:
@@ -99,7 +124,13 @@ class RowValidator:
                 return [f"Column '{col.name}' does not match the required pattern."]
         if col.type is ColumnType.INTEGER or col.type is ColumnType.FLOAT:
             if col.min_value is not None and value < col.min_value:
-                return [f"Column '{col.name}' must be at least {col.min_value:g}."]
+                return [f"Column '{col.name}' must be at least {self._fmt_number(col.min_value)}."]
             if col.max_value is not None and value > col.max_value:
-                return [f"Column '{col.name}' must be at most {col.max_value:g}."]
+                return [f"Column '{col.name}' must be at most {self._fmt_number(col.max_value)}."]
         return []
+
+    @staticmethod
+    def _fmt_number(value: float) -> str:
+        if float(value).is_integer():
+            return f"{int(value):,}"
+        return f"{value:.6f}".rstrip("0").rstrip(".")

@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from mdm_mcp.storage.repository import DatasetNotFound
 from mdm_mcp.services.dataset_service import DatasetService
 from mdm_mcp.services.file_service import FileService
 from mdm_mcp.services.row_service import RowService
@@ -165,3 +166,18 @@ def test_export_unknown_column_rejected(repo, tmp_path):
     seed(svc)
     with pytest.raises(ValueError, match="Unknown column"):
         files.export_rows("Candidates", str(tmp_path / "o.csv"), "csv", columns=["emial"])
+
+
+def test_import_create_if_missing(repo, tmp_path):
+    svc, _, files = make_services(repo)
+    file = tmp_path / "brand.csv"
+    file.write_text("name,city\nAsha,Delhi\nRahul,Mumbai\n", encoding="utf-8")
+    with pytest.raises(DatasetNotFound):
+        files.import_rows("Fresh", str(file), "auto", confirm=True)
+    preview = files.import_rows("Fresh", str(file), "auto", confirm=False, create_if_missing=True)
+    assert preview["preview"]["mapping"] == {"name": "name", "city": "city"}
+    result = files.import_rows("Fresh", str(file), "auto", confirm=True, create_if_missing=True)
+    assert result["added"] == 2 and result["rejected"] == 0
+    described = svc.describe_dataset("Fresh", 1)
+    assert described["row_count"] == 2
+    assert all(col["type"] == "string" for col in described["columns"])

@@ -6,7 +6,6 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from mdm_mcp.models.schema import FilterCondition
 from mdm_mcp.services.file_service import FileService
 from mdm_mcp.tools.base import get_services, ok_result
 
@@ -22,7 +21,7 @@ def register_file_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     @ok_result
-    def import_rows(dataset: str, file_path: str, format: str = "auto", confirm: bool = False) -> dict[str, Any]:
+    def import_rows(dataset: str, file_path: str, format: str = "auto", confirm: bool = False, create_if_missing: bool = False) -> dict[str, Any]:
         """Import rows into a dataset from a CSV or JSON file, in two safe steps.
 
         Step 1 (confirm=false, default): returns a mapping preview - how each file
@@ -40,6 +39,8 @@ def register_file_tools(mcp: FastMCP) -> None:
             file_path: Path to the .csv or .json file on this machine.
             format: "auto" (default, infers from extension), or force "csv"/"json".
             confirm: Must be true to actually import (default false = preview only).
+            create_if_missing: When the dataset does not exist, create it first with one
+                string column per file header, then import (default false).
 
         Returns:
             Preview: {"ok": true, "requires_confirmation": true, "preview": {...}}.
@@ -49,7 +50,7 @@ def register_file_tools(mcp: FastMCP) -> None:
         Example:
             import_rows(dataset="Candidates", file_path="~/Downloads/applicants.csv")
         """
-        return service().import_rows(dataset, file_path, format, confirm)
+        return service().import_rows(dataset, file_path, format, confirm, create_if_missing)
 
     @mcp.tool()
     @ok_result
@@ -57,7 +58,7 @@ def register_file_tools(mcp: FastMCP) -> None:
         dataset: str,
         file_path: str,
         format: str = "auto",
-        conditions: list[FilterCondition] | None = None,
+        conditions: list[dict[str, Any]] | None = None,
         columns: list[str] | None = None,
         overwrite: bool = False,
     ) -> dict[str, Any]:
@@ -82,5 +83,4 @@ def register_file_tools(mcp: FastMCP) -> None:
             export_rows(dataset="Candidates", file_path="~/Documents/applied_august.csv",
                         conditions=[{"column": "applied_on", "op": "between", "value": ["2026-08-01", "2026-08-31"]}])
         """
-        payload_conditions = [c.model_dump() for c in conditions] if conditions else None
-        return service().export_rows(dataset, file_path, format, conditions=payload_conditions, columns=columns, overwrite=overwrite)
+        return service().export_rows(dataset, file_path, format, conditions=conditions, columns=columns, overwrite=overwrite)

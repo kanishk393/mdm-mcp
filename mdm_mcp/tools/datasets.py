@@ -6,7 +6,6 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from mdm_mcp.models.schema import ColumnSpec, ColumnUpdate
 from mdm_mcp.services.dataset_service import DatasetService
 from mdm_mcp.tools.base import get_services, ok_result
 
@@ -22,7 +21,7 @@ def register_dataset_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     @ok_result
-    def create_dataset(name: str, columns: list[ColumnSpec], description: str = "") -> dict[str, Any]:
+    def create_dataset(name: str, columns: list[dict[str, Any]], description: str = "") -> dict[str, Any]:
         """Create a new dataset (a table) with user-defined typed columns.
 
         Use this whenever the user wants to start tracking something new - candidates,
@@ -52,7 +51,7 @@ def register_dataset_tools(mcp: FastMCP) -> None:
                 {"name": "applied_on", "type": "date"}
             ])
         """
-        return service().create_dataset(name, description, [c.model_dump() for c in columns])
+        return service().create_dataset(name, description, columns)
 
     @mcp.tool()
     @ok_result
@@ -102,7 +101,7 @@ def register_dataset_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     @ok_result
-    def add_column(dataset: str, column: ColumnSpec) -> dict[str, Any]:
+    def add_column(dataset: str, column: dict[str, Any]) -> dict[str, Any]:
         """Add a new typed column to an existing dataset.
 
         Existing rows are backfilled with the column's default value, or null when
@@ -121,11 +120,11 @@ def register_dataset_tools(mcp: FastMCP) -> None:
         Example:
             add_column(dataset="Candidates", column={"name": "expected_salary", "type": "float", "min_value": 0})
         """
-        return service().add_column(dataset, column.model_dump())
+        return service().add_column(dataset, column)
 
     @mcp.tool()
     @ok_result
-    def update_column(dataset: str, column: str, changes: ColumnUpdate) -> dict[str, Any]:
+    def update_column(dataset: str, column: str, changes: dict[str, Any]) -> dict[str, Any]:
         """Change a column's name, type, or constraints on an existing dataset.
 
         Only the fields you explicitly provide are changed. After the change every

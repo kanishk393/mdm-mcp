@@ -8,7 +8,7 @@ from pathlib import Path
 
 from mdm_mcp.models.schema import DatasetSchema
 from mdm_mcp.search.engine import FilterEngine
-from mdm_mcp.storage.repository import JsonRepository
+from mdm_mcp.storage.repository import DatasetNotFound, JsonRepository
 from mdm_mcp.validation.engine import RowValidator
 
 MAX_REPORTED_REJECTIONS = 100
@@ -18,13 +18,18 @@ class FileService:
     def __init__(self, repo: JsonRepository):
         self.repo = repo
 
-    def import_rows(self, dataset: str, file_path: str, format: str, confirm: bool) -> dict:
-        schema = self.repo.load_schema(dataset)
+    def import_rows(self, dataset: str, file_path: str, format: str, confirm: bool, create_if_missing: bool = False) -> dict:
         path = Path(file_path).expanduser()
         if not path.exists():
             raise ValueError(f"File not found: {file_path}")
         fmt = self._resolve_format(path, format)
         rows, file_columns = self._read_rows(path, fmt)
+        try:
+            schema = self.repo.load_schema(dataset)
+        except DatasetNotFound:
+            if not create_if_missing:
+                raise
+            schema = self._create_from_headers(dataset, file_columns)
         mapping, unmatched = self._build_mapping(schema, file_columns)
         mapped = [{mapping[key]: value for key, value in row.items() if key in mapping} for row in rows]
         missing_required = [col.name for col in schema.columns if col.required and col.name not in mapping.values()]
@@ -95,6 +100,16 @@ class FileService:
             "format": fmt,
             "rows_exported": len(matched),
         }
+
+    def _create_from_headers(self, dataset: str, file_columns: list[str]) -> DatasetSchema:
+        if not file_columns:
+            raise ValueError("Cannot auto-create a dataset from an empty file.")
+        schema = DatasetSchema(name=dataset.strip(), columns=[
+            {"name": col, "type": "string"} for col in file_columns
+        ])
+        self.repo.save_schema(schema)
+        self.repo.save_rows(schema.name, {"rows": {}, "next_id": 1})
+        return schema
 
     def _resolve_format(self, path: Path, format: str) -> str:
         fmt = (format or "auto").strip().lower()

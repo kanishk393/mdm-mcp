@@ -101,3 +101,40 @@ def test_defaults_fill_missing_optional_columns(candidates_schema):
     assert set(normalized) == {c.name for c in candidates_schema.columns}
     assert normalized["age"] is None
     assert normalized["stage"] is None
+
+
+def test_yes_no_rejected_not_coerced(candidates_schema):
+    validator = make_validator(candidates_schema)
+    for word in ("yes", "no", "on", "off", "yse"):
+        issues = validator.validate_row({"name": "Asha", "active": word})
+        assert any("must be true or false" in i for i in issues), word
+
+
+def test_bool_accepts_true_false_one_zero(candidates_schema):
+    validator = make_validator(candidates_schema)
+    for word in ("true", "True", "1", 1, 0, "0"):
+        assert validator.validate_row({"name": "Asha", "active": word}) == [], word
+    normalized = validator.normalize_row({"name": "Asha", "active": "1"})
+    assert normalized["active"] is True
+
+
+def test_phone_with_internal_spaces_and_dashes(candidates_schema):
+    validator = make_validator(candidates_schema)
+    assert validator.validate_row({"name": "Asha", "phone": "98765 43299"}) == []
+    assert validator.validate_row({"name": "Asha", "phone": "98765-43299"}) == []
+    assert validator.validate_row({"name": "Asha", "phone": "+91 98765 43299"}) == []
+    issues = validator.validate_row({"name": "Asha", "phone": "98765 432"})
+    assert any("Indian mobile" in i for i in issues)
+
+
+def test_numeric_bounds_human_readable(candidates_schema):
+    from mdm_mcp.models.schema import DatasetSchema
+    from mdm_mcp.validation.engine import RowValidator
+
+    schema = DatasetSchema.model_validate({
+        "name": "Big",
+        "columns": [{"name": "salary", "type": "float", "max_value": 1000000}],
+    })
+    issues = RowValidator(schema).validate_row({"salary": 2000000})
+    assert any("at most 1,000,000" in i for i in issues)
+    assert "1e+06" not in " ".join(issues)

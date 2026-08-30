@@ -60,17 +60,17 @@ def test_tool_docstring_audit():
         assert '"ok"' in description, f"{tool.name}: missing ok/error result shape"
 
 
-def test_create_dataset_column_schema_is_descriptive():
+def test_create_dataset_documentation_is_descriptive():
     from mdm_mcp.server import create_server
 
     server = create_server()
     tools = asyncio.run(server.list_tools())
     create = next(t for t in tools if t.name == "create_dataset")
-    columns_schema = create.inputSchema["properties"]["columns"]
-    assert columns_schema["type"] == "array"
-    column_def = json.dumps(create.inputSchema["$defs"]["ColumnSpec"])
-    assert "Column name" in column_def
-    assert "enum" in column_def
+    description = create.description
+    for token in ("string", "boolean", "integer", "float", "phone", "date", "enum",
+                  "required", "options", "Example"):
+        assert token in description, token
+    assert "columns" in create.inputSchema["properties"]
 
 
 def test_call_tool_roundtrip(tmp_path, monkeypatch):
@@ -217,3 +217,15 @@ def test_import_rows_defaults_to_preview(tmp_path, monkeypatch):
     result = _call(server, "import_rows", {"dataset": "X", "file_path": str(csv_file)})
     assert result["requires_confirmation"] is True
     assert result["preview"]["row_count"] == 1
+
+
+def test_bad_column_spec_returns_envelope_not_raw_pydantic(tmp_path, monkeypatch):
+    server = _fresh_server(tmp_path, monkeypatch)
+    result = _call(server, "create_dataset", {
+        "name": "Broken",
+        "columns": [{"name": "stage", "type": "enum"}],
+    })
+    assert result["ok"] is False
+    assert "needs at least one option" in result["error"]
+    assert "pydantic" not in result["error"].lower()
+    assert "validation error for" not in result["error"].lower()
