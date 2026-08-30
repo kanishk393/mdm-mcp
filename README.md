@@ -250,6 +250,12 @@ cp -r .opencode/skills/master-data-management ~/.config/opencode/skills/
 Then start a conversation with the server attached (`opencode.json` / `.mcp.json`
 from `setup.sh`, or `claude mcp add master-data -- docker run -i --rm -v mdm-data:/data mdm-mcp:latest`).
 
+**Auto vs manual invocation**: skills load automatically when a request is
+data-related; they are not listed in the `/` menu (that menu shows *commands*, a
+separate mechanism). For explicit invocation, both clients also ship a
+`/master-data <request>` project command (`.opencode/command/`, `.claude/commands/`)
+that loads the skill guidance on demand.
+
 ## 12. Restarting & resuming (your data never goes anywhere)
 
 There is **no long-running server to babysit**. The MCP client (OpenCode / Claude Code)
