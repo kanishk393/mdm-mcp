@@ -47,7 +47,7 @@ class RowService:
             "results": results,
         }
 
-    def get_row(self, dataset: str, row_id: str, columns: list[str] | None) -> dict:
+    def get_row(self, dataset: str, row_id: str | int, columns: list[str] | None) -> dict:
         schema = self.repo.load_schema(dataset)
         store = self.repo.load_rows(dataset)
         rid = str(row_id)

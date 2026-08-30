@@ -51,7 +51,7 @@ def register_row_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     @ok_result
-    def get_row(dataset: str, row_id: str, columns: list[str] | None = None) -> dict[str, Any]:
+    def get_row(dataset: str, row_id: str | int, columns: list[str] | None = None) -> dict[str, Any]:
         """Fetch a single row by id, optionally limited to specific columns.
 
         Use this when the user asks about one record ("show me row 12", "what is
@@ -77,7 +77,7 @@ def register_row_tools(mcp: FastMCP) -> None:
     def update_rows(
         dataset: str,
         values: dict[str, Any],
-        row_ids: list[str] | None = None,
+        row_ids: list[str | int] | None = None,
         conditions: list[FilterCondition] | None = None,
         dry_run: bool = True,
     ) -> dict[str, Any]:
@@ -114,7 +114,7 @@ def register_row_tools(mcp: FastMCP) -> None:
     @ok_result
     def delete_rows(
         dataset: str,
-        row_ids: list[str] | None = None,
+        row_ids: list[str | int] | None = None,
         conditions: list[FilterCondition] | None = None,
         confirm: bool = False,
     ) -> dict[str, Any]:

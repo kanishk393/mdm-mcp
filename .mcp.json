@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "master-data": {
+      "command": "/Users/kanishkkukreja/Assignment_ProdeAI/.venv/bin/mdm-mcp",
+      "args": []
+    }
+  }
+}
