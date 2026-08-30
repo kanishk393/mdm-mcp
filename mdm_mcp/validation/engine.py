@@ -1,8 +1,8 @@
 """RowValidator: coerces and validates rows against a dataset schema.
 
-Type coercion is delegated to a pydantic model built per dataset schema, so
-"5" becomes 5 for integer columns and "true" becomes True for boolean columns.
-Constraint checks (required, min/max, pattern, enum, phone, date) produce
+Each column is checked independently so a row with several problems reports all
+of them: type coercion runs per column via a cached pydantic TypeAdapter, then
+constraint checks (required, min/max, pattern, enum, phone, date) produce
 plain-language messages the agent can relay directly to a naive user.
 """
 
@@ -12,7 +12,7 @@ import re
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, ValidationError, create_model
+from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError, create_model
 
 from mdm_mcp.models.schema import ColumnSpec, ColumnType, DatasetSchema
 
@@ -27,6 +27,20 @@ PYDANTIC_TYPE_MAP: dict[ColumnType, type] = {
     ColumnType.ENUM: str,
 }
 
+TYPE_MESSAGES: dict[ColumnType, str] = {
+    ColumnType.INTEGER: "must be a whole number (integer)",
+    ColumnType.FLOAT: "must be a number",
+    ColumnType.BOOLEAN: "must be true or false",
+}
+
+_TYPE_ADAPTERS: dict[ColumnType, TypeAdapter] = {}
+
+
+def _type_adapter(column_type: ColumnType) -> TypeAdapter:
+    if column_type not in _TYPE_ADAPTERS:
+        _TYPE_ADAPTERS[column_type] = TypeAdapter(PYDANTIC_TYPE_MAP[column_type] | None)
+    return _TYPE_ADAPTERS[column_type]
+
 
 class _RowBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -36,55 +50,41 @@ class RowValidator:
     def __init__(self, schema: DatasetSchema):
         self.schema = schema
         self._model = self._build_model()
+        self._available = ", ".join(schema.column_names())
 
     def _build_model(self) -> type[BaseModel]:
         fields: dict[str, tuple[type, Any]] = {}
         for col in self.schema.columns:
-            fields[col.name] = (PYDANTIC_TYPE_MAP[col.type], col.default)
+            fields[col.name] = (PYDANTIC_TYPE_MAP[col.type] | None, col.default)
         return create_model("RowModel", __base__=_RowBase, **fields)
 
     def validate_row(self, row: dict) -> list[str]:
-        try:
-            coerced = self._model.model_validate(row)
-        except ValidationError as exc:
-            return self._coercion_messages(exc)
         issues: list[str] = []
+        for key in row:
+            if self.schema.column(key) is None:
+                issues.append(f"Column '{key}' is not defined in this dataset. Available columns: {self._available}.")
         for col in self.schema.columns:
-            issues.extend(self._constraint_issues(col, getattr(coerced, col.name)))
+            raw = row[col.name] if col.name in row else col.default
+            try:
+                value = _type_adapter(col.type).validate_python(raw)
+            except ValidationError:
+                issues.append(f"Column '{col.name}' {TYPE_MESSAGES.get(col.type, 'must be text')}.")
+                continue
+            if col.required and (value is None or (isinstance(value, str) and not value.strip())):
+                issues.append(f"Column '{col.name}' is required.")
+                continue
+            issues.extend(self._constraint_issues(col, value))
         return issues
 
     def normalize_row(self, row: dict) -> dict:
         coerced = self._model.model_validate(row)
         return {col.name: getattr(coerced, col.name) for col in self.schema.columns}
 
-    def _coercion_messages(self, exc: ValidationError) -> list[str]:
-        available = ", ".join(self.schema.column_names())
-        messages = []
-        for error in exc.errors(include_url=False):
-            loc = error.get("loc", ())
-            column = str(loc[0]) if loc else "row"
-            etype = error.get("type", "")
-            if etype == "extra_forbidden":
-                messages.append(f"Column '{column}' is not defined in this dataset. Available columns: {available}.")
-            elif etype in {"int_parsing", "int_from_float"}:
-                messages.append(f"Column '{column}' must be a whole number (integer).")
-            elif etype == "float_parsing":
-                messages.append(f"Column '{column}' must be a number.")
-            elif etype in {"bool_parsing", "bool_type"}:
-                messages.append(f"Column '{column}' must be true or false.")
-            elif etype == "string_type":
-                messages.append(f"Column '{column}' must be text.")
-            else:
-                messages.append(f"Column '{column}' has an invalid value: {error.get('msg', '')}.")
-        return messages
-
     def _constraint_issues(self, col: ColumnSpec, value: Any) -> list[str]:
-        if col.required and (value is None or (isinstance(value, str) and not value.strip())):
-            return [f"Column '{col.name}' is required."]
         if value is None:
             return []
         if col.type is ColumnType.ENUM:
-            if str(value) not in [str(o) for o in (col.options or [])]:
+            if str(value) not in [str(option) for option in (col.options or [])]:
                 return [f"Column '{col.name}' must be one of: {', '.join(col.options or [])}."]
         if col.type is ColumnType.PHONE:
             if not re.fullmatch(col.pattern, str(value).strip()):

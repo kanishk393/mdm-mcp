@@ -21,13 +21,13 @@
 
 ## 3. Phase 3 — Search, fuzzy & bulk (`feat: search, fuzzy matching & bulk operations`)
 
-- [ ] 3.1 Implement FilterEngine (eq, ne, gt, gte, lt, lte, contains, in, between, is_empty, is_not_empty) with plain-language rejection of unknown columns/type mismatches; verify filter unit tests pass
-- [ ] 3.2 Implement search_rows (filters, one-column sort, limit/offset pagination clamped at 100, column projection, total + next_offset); verify pagination scenarios from specs pass
-- [ ] 3.3 Add rapidfuzz fuzzy matching on string/text columns with similarity scores; verify typo scenario ("Rahual" finds "Rahul Sharma")
-- [ ] 3.4 Implement summarize_dataset (row count, numeric min/max/avg/sum, enum breakdowns); verify aggregates match fixture data
-- [ ] 3.5 Extend update_rows/delete_rows to filter-based bulk with dry_run default and confirm gate; verify dry-run changes nothing and confirmed run reports counts
-- [ ] 3.6 Implement import_rows (CSV/JSON, two-step mapping preview then confirmed commit with per-row report) and export_rows (filter + projection to CSV/JSON); verify export→import roundtrip preserves rows
-- [ ] 3.7 Run full pytest suite green and commit `feat: search, fuzzy matching & bulk operations`
+- [x] 3.1 Implement FilterEngine (eq, ne, gt, gte, lt, lte, contains, in, between, is_empty, is_not_empty) with plain-language rejection of unknown columns/type mismatches; verify filter unit tests pass
+- [x] 3.2 Implement search_rows (filters, one-column sort, limit/offset pagination clamped at 100, column projection, total + next_offset); verify pagination scenarios from specs pass
+- [x] 3.3 Add rapidfuzz fuzzy matching on string/text columns with similarity scores; verify typo scenario ("Rahual" finds "Rahul Sharma")
+- [x] 3.4 Implement summarize_dataset (row count, numeric min/max/avg/sum, enum breakdowns); verify aggregates match fixture data
+- [x] 3.5 Extend update_rows/delete_rows to filter-based bulk with dry_run default and confirm gate; verify dry-run changes nothing and confirmed run reports counts
+- [x] 3.6 Implement import_rows (CSV/JSON, two-step mapping preview then confirmed commit with per-row report) and export_rows (filter + projection to CSV/JSON); verify export→import roundtrip preserves rows
+- [x] 3.7 Run full pytest suite green and commit `feat: search, fuzzy matching & bulk operations`
 
 ## 4. Phase 4 — Polish (`docs: tool docs & persona walkthroughs`)
 

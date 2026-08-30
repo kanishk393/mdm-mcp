@@ -78,6 +78,16 @@ class ColumnUpdate(BaseModel):
     options: list[str] | None = Field(default=None, description="Allowed values for enum columns (null clears it).")
 
 
+class FilterCondition(BaseModel):
+    """One filter condition: column op value."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    column: str = Field(description="Dataset column to filter on.")
+    op: str = Field(description="One of: eq, ne, gt, gte, lt, lte, contains, in, between, is_empty, is_not_empty.")
+    value: Any = Field(default=None, description="Comparison value. A two-element list [low, high] for between, a list of values for in; omit for is_empty/is_not_empty.")
+
+
 class DatasetSchema(BaseModel):
     """The user-defined schema of one dataset."""
 
