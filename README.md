@@ -26,6 +26,19 @@ Data lives in the Docker volume `mdm-data` (survives restarts; reset with
 `docker volume rm mdm-data`). No Python, no venv, no ports needed — clients spawn the
 container per session over stdio.
 
+## 30-second demo
+
+After `bash setup.sh`:
+
+```bash
+bash demo/demo.sh
+```
+
+Runs a scripted MCP client session against the containerized server — the full
+hiring-partner story: typed schema creation, CSV import with mapping preview and
+per-row validation rejects, typo-tolerant fuzzy search ("Rahual" finds Rahul),
+filtered + sorted shortlist, bulk update with dry-run preview, and dataset summaries.
+
 ## Quickstart (local, no Docker)
 
 ```bash
