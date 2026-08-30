@@ -2,13 +2,13 @@
 
 ## 1. Phase 1 — Foundation (`feat: dataset & row foundation`)
 
-- [ ] 1.1 Scaffold Python project: pyproject.toml, `mdm_mcp` package, .gitignore, uv venv (Python 3.12) with mcp + pydantic + pytest installed; verify `python -c "import mdm_mcp"` succeeds
-- [ ] 1.2 Implement core models (ColumnType, ColumnSpec with constraint validation, DatasetSchema); verify model unit tests pass (enum without options rejected, bad pattern rejected, duplicate columns rejected at service level)
-- [ ] 1.3 Implement JsonRepository (data/<slug>/schema.json + rows.json, atomic temp-file writes, MDM_DATA_DIR override, DatasetNotFound with available names); verify storage roundtrip tests pass
-- [ ] 1.4 Implement RowValidator with pydantic create_model for all 8 column types (string, text, boolean, integer, float, phone, date, enum) + required/min/max/pattern; verify validation unit tests pass (phone +91 accepted, enum rejection, unknown column, coercion "5"→5)
-- [ ] 1.5 Implement dataset_service (create/list/describe with pagination + sample cap) and row_service (add_rows with batch cap + per-row report, get_row with projection); verify service tests pass
-- [ ] 1.6 Register FastMCP tools create_dataset, list_datasets, describe_dataset, add_rows, get_row with full docstrings and structured ok/error results; verify smoke test lists 5 tools each with description and input schema
-- [ ] 1.7 Run full pytest suite green and commit `feat: dataset & row foundation`
+- [x] 1.1 Scaffold Python project: pyproject.toml, `mdm_mcp` package, .gitignore, uv venv (Python 3.12) with mcp + pydantic + pytest installed; verify `python -c "import mdm_mcp"` succeeds
+- [x] 1.2 Implement core models (ColumnType, ColumnSpec with constraint validation, DatasetSchema); verify model unit tests pass (enum without options rejected, bad pattern rejected, duplicate columns rejected at service level)
+- [x] 1.3 Implement JsonRepository (data/<slug>/schema.json + rows.json, atomic temp-file writes, MDM_DATA_DIR override, DatasetNotFound with available names); verify storage roundtrip tests pass
+- [x] 1.4 Implement RowValidator with pydantic create_model for all 8 column types (string, text, boolean, integer, float, phone, date, enum) + required/min/max/pattern; verify validation unit tests pass (phone +91 accepted, enum rejection, unknown column, coercion "5"→5)
+- [x] 1.5 Implement dataset_service (create/list/describe with pagination + sample cap) and row_service (add_rows with batch cap + per-row report, get_row with projection); verify service tests pass
+- [x] 1.6 Register FastMCP tools create_dataset, list_datasets, describe_dataset, add_rows, get_row with full docstrings and structured ok/error results; verify smoke test lists 5 tools each with description and input schema
+- [x] 1.7 Run full pytest suite green and commit `feat: dataset & row foundation`
 
 ## 2. Phase 2 — Schema lifecycle & row updates (`feat: schema lifecycle & row updates`)
 
